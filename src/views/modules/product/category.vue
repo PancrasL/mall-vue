@@ -1,6 +1,23 @@
 <template>
-  <el-tree :data="menus" :props="defaultProps" :expand-on-click-node="false" show-checkbox
-           node-key="catId" :default-expanded-keys="expandedKey">
+  <div>
+    <el-dialog
+      title="提示"
+      :visible.sync="dialogVisible"
+      width="30%"
+    >
+      <el-form :model="category">
+        <el-form-item label="分类名称">
+          <el-input v-model="category.name" autocomplete="off"></el-input>
+        </el-form-item>
+      </el-form>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="dialogVisible = false">取 消</el-button>
+        <el-button type="primary" @click="addCategory">确 定</el-button>
+      </span>
+    </el-dialog>
+
+    <el-tree :data="menus" :props="defaultProps" :expand-on-click-node="false" show-checkbox
+             node-key="catId" :default-expanded-keys="expandedKey">
     <span class="custom-tree-node" slot-scope="{ node, data }">
         <span>{{ node.label }}</span>
         <span>
@@ -10,15 +27,18 @@
                      @click="() => remove(node, data)">Delete</el-button>
         </span>
       </span>
-  </el-tree>
+    </el-tree>
+  </div>
 </template>
 
 <script>
 export default {
   data () {
     return {
+      category: {name: '', parentCid: 0, catLevel: 0, showStatus: 1, sort: 0},
       menus: [],
       expandedKey: [],
+      dialogVisible: false,
       defaultProps: {
         children: 'children',
         label: 'name'
@@ -38,7 +58,10 @@ export default {
     },
     // 添加树形条目
     append (data) {
-      console.log('append', data)
+      this.dialogVisible = true
+      this.category.parentCid = data.catId
+      this.category.catLevel = data.catLevel + 1
+      console.log(this.category)
     },
     // 删除树形条目
     remove (node, data) {
@@ -65,6 +88,24 @@ export default {
         this.$message({
           message: '取消成功'
         })
+      })
+    },
+    // 添加分类
+    addCategory () {
+      console.log(this.category)
+      this.$http({
+        url: this.$http.adornUrl('/product/category/save'),
+        method: 'post',
+        data: this.$http.adornData(this.category, false)
+      }).then(({data}) => {
+        this.$message({
+          message: '分类菜单添加成功',
+          type: 'success'
+        })
+        this.dialogVisible = false
+        this.getMenus()
+        // 设置需要默认展开的菜单
+        this.expandedKey = [this.category.parentCid]
       })
     }
   },
